@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arksim Responsive Fix</title>
+  <style>
+    :root{
+      --bg:#0b0c10; --panel:#14151b; --panel2:#1a1b22; --text:#e5e7eb; --muted:#9aa0aa;
+      --accent:#4BA3F2; --grid:#2a2d36; --card:#0f1014; --glow:#4BA3F2;
+      --scroll-track:#0d0e12; --scroll-thumb:#303441; --scroll-thumb-hover:#4BA3F2;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif}
+    .app{display:grid;grid-template-columns:280px 280px 1fr 280px;grid-template-rows:1fr auto;gap:16px;padding:16px;height:100vh;padding-bottom:16px}
+    @supports (height: 100dvh){ .app{height:100dvh} }
+    .panel{background:linear-gradient(135deg,var(--panel),var(--panel2));border:1px solid #20222b;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+    .title{font-weight:700;font-size:13px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+    /* Chart */
+    .chart-container{grid-column:3 / 5;grid-row:1;display:flex;flex-direction:column;gap:12px}
+    .chart-panel{flex:1;background:linear-gradient(180deg,#0d0f14,#0b0c10);border:1px solid #1d1f27;border-radius:14px;padding:16px;position:relative;overflow:hidden}
+    .chart-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .chart-top .select{max-width:200px}
+    .chart{width:100%;height:100%;min-height:420px}
+    .legend{display:flex;flex-wrap:wrap;gap:12px;padding:12px;background:var(--panel);border:1px solid #20222b;border-radius:10px;font-size:11px}
+    .legend-item{display:flex;align-items:center;gap:6px;cursor:pointer;position:relative}
+    .legend-item input[type="checkbox"]{width:14px;height:14px}
+    .legend-dot{width:8px;height:8px;border-radius:50%}
+    .legend-name{user-select:none}
+    .tooltip{position:absolute;bottom:100%;left:0;margin-bottom:8px;background:#0d0e12;border:1px solid #2a2d36;border-radius:8px;padding:10px;min-width:220px;opacity:0;pointer-events:none;transform:translateY(5px);transition:.2s;z-index:1000;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+    .legend-item:hover .tooltip{opacity:1;transform:translateY(0)}
+    .tooltip-row{display:flex;justify-content:space-between;padding:2px 0;font-size:10px}
+    .tooltip-label{color:var(--muted)}
+    .tooltip-value{color:var(--text);font-weight:600}
+    /* Bottom row */
+    .bottom-grid{grid-column:2 / 5;grid-row:2;display:grid;grid-template-columns:1fr 1fr;gap:16px;grid-auto-rows:minmax(180px, auto);margin-bottom:12px}
+    @media (max-width: 1200px){.bottom-grid{grid-template-columns:1fr}}
+    @media (max-height: 820px){ .bottom-grid{grid-template-columns:1fr} }
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:20px;row-gap:12px;align-content:start}
+    @media (max-width: 1200px){.stats-grid{grid-template-columns:1fr}}
+    /* Controls + sliders */
+    .control{margin-bottom:10px;padding:8px;background:var(--card);border:1px solid #1f2129;border-radius:8px}
+    .control label{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:500;margin-bottom:6px;color:var(--text)}
+    .value-bubble{padding:2px 6px;border-radius:12px;font-size:10px;background:#0d0e12;border:1px solid #2a2d36;color:var(--accent);font-weight:600}
+    input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:4px;background:#2a2d36;outline:none}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--accent);border-radius:50%;border:2px solid #0d0e12;cursor:pointer;transition:.2s}
+    input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 0 4px rgba(75,163,242,.2)}
+    .select,select{width:100%;background:#0d0e12;color:var(--text);border:1px solid #2a2d36;border-radius:6px;padding:6px;font-size:11px}
+    .btn{cursor:pointer;background:#0d0e12;border:1px solid #2a2d36;color:var(--text);border-radius:6px;padding:6px 10px;font-size:11px;transition:.2s}
+    .btn:hover{border-color:var(--accent);background:#1a1b22}
+    .scale-labels{margin:-2px 0 6px 0;font-size:10px!important;line-height:1.2;color:var(--muted);letter-spacing:.2px;font-weight:400}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #2a2d36;border-radius:999px;background:#0d0e12;font-size:10px}
+    .small{font-size:10px;color:var(--muted)}
+    .rank-badge{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#0d0e12;border:1px solid #2a2d36;color:var(--muted);font-size:11px;font-weight:700;flex:0 0 20px}
+    /* Lika stora kontrollfönster i Makro och Strategi */
+    .top-controls .control{min-height:72px;display:flex;flex-direction:column;justify-content:space-between;padding:10px 12px;margin-bottom:6px}
+    .top-controls .control .scale-labels{min-height:10px;margin:-2px 0 2px 0}
+    .top-controls .title{margin-bottom:8px}
+    /* Intern scroll för toppanelerna + korrekt krymp i grid */
+    .app > .panel{min-height:0}
+    .top-controls{overflow:auto;-webkit-overflow-scrolling:touch}
+    .chart-container{min-height:0}
+    /* Responsive chart container behavior */
+    @media (max-width: 1200px){ .app{ grid-template-columns: clamp(220px,24vw,280px) clamp(220px,24vw,280px) 1fr clamp(220px,24vw,280px); } }
+    @media (max-width: 900px){ .chart-container{grid-column:2 / 5} }
+    @media (max-width: 760px){ .app{ grid-template-columns: 1fr; grid-template-rows:auto; } .app > *{ grid-column:1 / -1 !important; } .chart-container{ grid-column:1 / -1; } .chart{ min-height:300px; } }
+    /* Subtila scrollbars */
+    *{ scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track) }
+    *::-webkit-scrollbar{ width:6px; height:6px }
+    *::-webkit-scrollbar-track{ background:var(--scroll-track) }
+    *::-webkit-scrollbar-thumb{ background:var(--scroll-thumb); border-radius:8px; border:1px solid #0b0c10 }
+    *::-webkit-scrollbar-thumb:hover{ background:var(--scroll-thumb-hover) }
+    *::-webkit-scrollbar-button{ width:0; height:0; display:none }
+    *::-webkit-scrollbar-corner{ background:transparent }
+    /* Breakpoint layout */
+    .bp-header{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+    .bp-note{display:block;margin:4px 0 8px 0;color:var(--muted);font-size:10px}
+    .breakpoint-panel .bp-controls{display:grid;grid-template-columns:1fr;gap:10px;margin-top:6px}
+    .breakpoint-panel .btn{width:100%;border-radius:10px;padding:10px 14px;font-weight:600}
+    .breakpoint-panel .btn-primary{background:var(--accent);border-color:var(--accent);color:#0b0c10}
+    .breakpoint-panel .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 18px rgba(75,163,242,.25),0 0 0 4px rgba(75,163,242,.2)}
+    .breakpoint-panel .btn:active{transform:translateY(1px)}
+    .breakpoint-panel{margin-bottom:12px}
+  
+.tooltip-label {
+  font-size: 15px; /* ingress */
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.stats-grid .small {
+  font-size: 13px; /* punktlista */
+  line-height: 1.5;
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Makro panel -->
+  <div class="panel top-controls macro-controls" style="grid-column:1;grid-row:1;">
+    <div class="title">POLITIKK & MAKRO</div>
+    <!-- Scenario dropdown (enkel) -->
+    <div class="control">
+      <label><span>Scenario</span></label>
+      <select id="scenarioSelect" class="select">
+        <option value="egen" selected>Egen (manuell)</option>
+        <option value="normal">Normal / stabil</option>
+        <option value="low">Global lågkonjunktur</option>
+        <option value="boom">Global boom</option>
+        <option value="geo">Geopolitisk konflikt</option>
+        <option value="tech">Teknologiskt genombrott</option>
+        <option value="green">Grön omställning globalt</option>
+        <option value="ai">AI Singularity</option>
+        <option value="klima">Ekstrem klimakrise</option>
+        <option value="alien">Ekstraterrestrisk kontakt</option>
+      </select>
+    </div>
+    <div class="control"><label><span>Rente</span><span class="value-bubble"><span id="rateVal">3.0</span>%</span></label><input id="rate" type="range" min="0" max="10" step="0.1" value="3"/></div>
+    <div class="control"><label><span>Konjunktur</span><span class="value-bubble" id="cycleLabel">Normal</span></label><div class="scale-labels">Lav · Normal · Høy</div><input id="cycle" type="range" min="1" max="10" step="1" value="5"/></div>
+    <div class="control"><label><span>Offentlige investeringer</span><span class="value-bubble" id="publicSpendLabel">Normal</span></label><div class="scale-labels">Kutt · Normal · Vekst</div><input id="publicSpend" type="range" min="1" max="10" step="1" value="5"/></div>
+    <div class="control"><label><span>Materialkostnader</span><span class="value-bubble" id="materialsLabel">Middels</span></label><div class="scale-labels">Lave · Middels · Høye</div><input id="materials" type="range" min="1" max="10" step="1" value="5"/></div>
+    <div class="control"><label><span>Bærekraftkrav</span><span class="value-bubble" id="sustainReqLabel">Moderate</span></label><div class="scale-labels">Lave · Moderate · Strenge</div><input id="sustainReq" type="range" min="1" max="10" step="1" value="5"/></div>
+    <div class="control"><label><span>Teknologigjennombrudd</span><span class="value-bubble" id="techBreakLabel">Ingen</span></label><div class="scale-labels">Ingen · Moderate · Store</div><input id="techBreak" type="range" min="1" max="10" step="1" value="5"/></div>
+    <div class="control"><label><span>Reguleringsnivå</span><span class="value-bubble" id="regLevelLabel">Middels</span></label><div class="scale-labels">Lavt · Middels · Høyt</div><input id="regLevel" type="range" min="1" max="10" step="1" value="5"/></div>
+    <div class="control"><label><span>Global økonomi</span><span class="value-bubble" id="globEcoLabel">Normal</span></label><div class="scale-labels">Svak · Normal · Sterk</div><input id="globalEconomy" type="range" min="1" max="10" step="1" value="6"/></div>
+  </div>
+  <!-- Strategi panel -->
+  <div class="panel top-controls" style="grid-column:2;grid-row:1;">
+    <div class="title">KONTOR & STRATEGI</div>
+    <div class="control"><label><span>Kontor</span></label><select id="firmSelect" class="select"></select></div>
+    <div class="control"><label><span>Strategi</span></label>
+      <select id="strategySelect" class="select">
+        <option value="egen" selected>Egen (manuell)</option>
+        <option value="innovasjon">Innovasjonsleder</option>
+        <option value="kostnad">Kostnadsleder</option>
+        <option value="offentlig">Offentlig fokus</option>
+        <option value="privat">Privat fokus</option>
+        <option value="gronn">Grønn profil</option>
+        <option value="intl">Internasjonal ekspansjon</option>
+        <option value="balansert">Balansert</option>
+      </select>
+    </div>
+    <div class="control"><label><span>Privat andel</span><span class="value-bubble" id="pPrivV">6</span></label><div class="scale-labels">&nbsp;</div><input id="pPriv" type="range" min="1" max="10" step="1" value="6"/></div>
+    <div class="control"><label><span>Økonomisk styrke</span><span class="value-bubble" id="pFinV">7</span></label><div class="scale-labels">&nbsp;</div><input id="pFin" type="range" min="1" max="10" step="1" value="7"/></div>
+    <div class="control"><label><span>Offentlig andel</span><span class="value-bubble" id="pPubV">6</span></label><div class="scale-labels">&nbsp;</div><input id="pPub" type="range" min="1" max="10" step="1" value="6"/></div>
+    <div class="control"><label><span>Talent & kapasitet</span><span class="value-bubble" id="pTalV">7</span></label><div class="scale-labels">&nbsp;</div><input id="pTal" type="range" min="1" max="10" step="1" value="7"/></div>
+    <div class="control"><label><span>Bærekraft</span><span class="value-bubble" id="pSusV">8</span></label><div class="scale-labels">&nbsp;</div><input id="pSus" type="range" min="1" max="10" step="1" value="8"/></div>
+    <div class="control"><label><span>Teknologi</span><span class="value-bubble" id="pTechV">7</span></label><div class="scale-labels">&nbsp;</div><input id="pTech" type="range" min="1" max="10" step="1" value="7"/></div>
+    <div class="control"><label><span>Innovasjon</span><span class="value-bubble" id="pInvV">7</span></label><div class="scale-labels">&nbsp;</div><input id="pInv" type="range" min="1" max="10" step="1" value="7"/></div>
+    <div class="control"><label><span>Internasjonalisering</span><span class="value-bubble" id="pIntV">6</span></label><div class="scale-labels">&nbsp;</div><input id="pInt" type="range" min="1" max="10" step="1" value="6"/></div>
+  </div>
+  <!-- Chart -->
+  <div class="chart-container">
+    <div class="chart-panel">
+      <div class="chart-top">
+        <div class="title" id="chartTitle">Omsetningsutvikling 2020-2026 (indeks 2020=100)</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <select id="metricSelect" class="select">
+            <option value="revenue" selected>Omsetning</option>
+            <option value="profit">Resultat</option>
+            <option value="margin">Marginer</option>
+          </select>
+          <label class="badge" id="indexWrap" style="cursor:pointer"><input id="indexToggle" type="checkbox" checked style="margin-right:6px">Indeks 2020=100</label>
+        </div>
+      </div>
+      <div class="small" id="metricHelp">Velg nøkkeltall: Omsetning, resultat eller marginer.</div>
+      <svg id="chart" class="chart"></svg>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <!-- Breakpoint Controller -->
+  <div class="panel breakpoint-panel">
+    <div class="title">Breakpoint Controller</div>
+    <div class="bp-header">
+      <span class="badge">Synlig: <b id="activeRange">2020→2026</b></span>
+      <span class="badge">Aktivt år: <b id="nextYearBadge">2026</b></span>
+      <span class="badge">Antall breakpoints: <b id="bpCount">0</b></span>
+    </div>
+    <div class="bp-note small">Breakpoints låser historikken, reglene påvirker bare fremtiden.</div>
+    <div class="bp-controls">
+      <button class="btn btn-primary" id="saveBP">Lagre breakpoint</button>
+      <button class="btn" id="clearBP">Tøm siste</button>
+    </div>
+  </div>
+  <!-- Bottom responsive area -->
+  <div class="bottom-grid">
+    <div class="panel stats-panel">
+      <div class="title" id="statsTitle">Toppliste, Omsetning</div>
+      <div id="stats-content"></div>
+    </div>
+    <div class="panel controls-panel">
+      <div class="title">INSTRUKSJONER</div>
+      <div class="tooltip-label">
+        Dette er en helt unødvendig, men forhåpentligvis morsom simulator. Alt her er på liksom, tallene er syntetiske og resultatene har ingen prognoseverdi. Bruk den til å utforske ideer og diskutere med kollegaer, ikke til beslutninger.
+      </div>
+      <div class="stats-grid" style="margin-top:8px">
+        <div class="small">
+          • Velg kontor i «Kontor». A-Lab er valgt ved oppstart.<br>
+          • Velg strategi. «Egen» betyr at du styrer alle verdier manuelt.<br>
+          • I «Politikk & makro» kan du velge scenario eller justere skyveknappene. Manuelle endringer setter scenario til «Egen».<br>
+          • Over grafen velger du nøkkeltall. Slå av «Indeks 2020=100» for å vise MNOK.
+        </div>
+        <div class="small">
+          • «Lagre breakpoint» låser historikken til året du ser. Reglene påvirker bare årene etter. «Tøm siste» fjerner siste breakpoint.<br>
+          • Under grafen kan du slå av og på firmaer. Valgt kontor vises tydelig, andre er lysere og alle stiplet etter siste breakpoint.<br>
+          • Årstall vises nederst i grafen.<br>
+          • «Toppliste» viser endring fra 2025 til siste synlige år for valgt nøkkeltall.
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+<script>
+/* ---- Data ---- */
+const YEARS = Array.from({length:16}, (_,i)=>2020+i);
+// Omsetning (1000 NOK) 2020–2024 fra proff (delmengde – resten beregnes)
+const REVENUE_2020_2024 = {
+  "Snøhetta Oslo AS": [123910,172272,195063,506145,425019],
+  "LINK Arkitektur AS": [427933,399562,381292,405318,404894],
+  "Nordic Office of Architecture AS": [372895,361434,325973,349683,347333],
+  "LPO Arkitekter AS": [220767,172495,176709,197796,187704],
+  "Arkitema AS": [126634,105627,127754,141241,150518],
+  "A-Lab AS": [175187,163800,156609,134928,142053],
+  "Hille Melbye Arkitekter AS": [104693,100242,95271,103031,102841],
+  "MAD Arkitekter AS": [67786,78827,88613,88423,83958],
+  "NSW Arkitektur AS": [58191,54808,50946,60559,46943],
+  "Ghilardi+Hellsten Arkitekter AS": [24086,23721,22656,14173,13751],
+  "Jensen & Skodvin Arkitektkontor AS": [1765,11293,18752,24056,37021],
+  "Arkitektfirma Helen & Hard AS": [28111,28136,34010,34855,33417],
+  "Atelier Oslo AS": [22440,21681,28464,19159,19575]
+};
+const firms = [
+  {name:"Dark Design Group", revenue:106.4, staff:66, color:"#ff6b6b", isDark:true,
+   params:{Innovasjon:7,Bærekraft:8,Internasjonalisering:6,"Offentlig andel":6,"Privat andel":6,Teknologi:7,"Talent & kapasitet":7,"Økonomisk styrke":7}},
+  {name:"Snøhetta Oslo AS", revenue:425.0, staff:96, color:"#4BA3F2",
+   params:{Innovasjon:10,Bærekraft:8,Internasjonalisering:10,"Offentlig andel":4,"Privat andel":6,Teknologi:9,"Talent & kapasitet":9,"Økonomisk styrke":10}},
+  {name:"LINK Arkitektur AS", revenue:404.9, staff:267, color:"#4ecdc4",
+   params:{Innovasjon:7,Bærekraft:9,Internasjonalisering:6,"Offentlig andel":7,"Privat andel":6,Teknologi:7,"Talent & kapasitet":7,"Økonomisk styrke":9}},
+  {name:"Nordic Office of Architecture AS", revenue:347.3, staff:188, color:"#45b7d1",
+   params:{Innovasjon:8,Bærekraft:8,Internasjonalisering:8,"Offentlig andel":8,"Privat andel":5,Teknologi:8,"Talent & kapasitet":8,"Økonomisk styrke":9}},
+  {name:"LPO Arkitekter AS", revenue:187.7, staff:120, color:"#f9ca24",
+   params:{Innovasjon:7,Bærekraft:7,Internasjonalisering:6,"Offentlig andel":6,"Privat andel":7,Teknologi:6,"Talent & kapasitet":7,"Økonomisk styrke":8}},
+  {name:"Arkitema AS", revenue:150.5, staff:84, color:"#6c5ce7",
+   params:{Innovasjon:7,Bærekraft:7,Internasjonalisering:7,"Offentlig andel":7,"Privat andel":6,Teknologi:7,"Talent & kapasitet":7,"Økonomisk styrke":8}},
+  {name:"A-Lab AS", revenue:142.1, staff:96, color:"#a29bfe",
+   params:{Innovasjon:8,Bærekraft:8,Internasjonalisering:7,"Offentlig andel":6,"Privat andel":7,Teknologi:8,"Talent & kapasitet":7,"Økonomisk styrke":8}},
+  {name:"Hille Melbye Arkitekter AS", revenue:102.8, staff:50, color:"#fd79a8",
+   params:{Innovasjon:6,Bærekraft:6,Internasjonalisering:5,"Offentlig andel":7,"Privat andel":6,Teknologi:5,"Talent & kapasitet":6,"Økonomisk styrke":7}},
+  {name:"Lund Hagem Arkitekter AS", revenue:97.3, staff:61, color:"#00b894",
+   params:{Innovasjon:9,Bærekraft:8,Internasjonalisering:7,"Offentlig andel":5,"Privat andel":8,Teknologi:8,"Talent & kapasitet":8,"Økonomisk styrke":8}},
+  {name:"MAD Arkitekter AS", revenue:84.0, staff:70, color:"#e17055",
+   params:{Innovasjon:8,Bærekraft:8,Internasjonalisering:6,"Offentlig andel":5,"Privat andel":8,Teknologi:7,"Talent & kapasitet":7,"Økonomisk styrke":7}},
+  {name:"NSW Arkitektur AS", revenue:46.9, staff:32, color:"#fdcb6e",
+   params:{Innovasjon:7,Bærekraft:7,Internasjonalisering:5,"Offentlig andel":6,"Privat andel":7,Teknologi:6,"Talent & kapasitet":6,"Økonomisk styrke":7}}
+  ,{name:"Ghilardi+Hellsten Arkitekter AS", revenue:13.8, staff:13, color:"#74b9ff",
+    params:{Innovasjon:8,Bærekraft:7,Internasjonalisering:6,"Offentlig andel":6,"Privat andel":6,Teknologi:6,"Talent & kapasitet":6,"Økonomisk styrke":6}}
+  ,{name:"Jensen & Skodvin Arkitektkontor AS", revenue:37.0, staff:0, color:"#55efc4",
+    params:{Innovasjon:9,Bærekraft:8,Internasjonalisering:7,"Offentlig andel":6,"Privat andel":6,Teknologi:7,"Talent & kapasitet":7,"Økonomisk styrke":7}}
+  ,{name:"Arkitektfirma Helen & Hard AS", revenue:33.4, staff:29, color:"#e84393",
+    params:{Innovasjon:8,Bærekraft:8,Internasjonalisering:7,"Offentlig andel":6,"Privat andel":6,Teknologi:7,"Talent & kapasitet":7,"Økonomisk styrke":7}}
+  ,{name:"Atelier Oslo AS", revenue:19.6, staff:16, color:"#2d3436",
+    params:{Innovasjon:8,Bærekraft:7,Internasjonalisering:6,"Offentlig andel":6,"Privat andel":6,Teknologi:6,"Talent & kapasitet":6,"Økonomisk styrke":6}}
+];
+/* ---- Strategi-presets ---- */
+const STRATEGY_PRESETS = {
+  egen:null,
+  innovasjon:{Innovasjon:9, Teknologi:8, "Talent & kapasitet":8, "Økonomisk styrke":7, Bærekraft:8, "Privat andel":6, "Offentlig andel":5, Internasjonalisering:7},
+  kostnad:{Innovasjon:5, Teknologi:7, "Talent & kapasitet":7, "Økonomisk styrke":8, Bærekraft:6, "Privat andel":7, "Offentlig andel":5, Internasjonalisering:5},
+  offentlig:{Innovasjon:6, Teknologi:6, "Talent & kapasitet":7, "Økonomisk styrke":7, Bærekraft:8, "Privat andel":4, "Offentlig andel":8, Internasjonalisering:5},
+  privat:{Innovasjon:7, Teknologi:7, "Talent & kapasitet":7, "Økonomisk styrke":7, Bærekraft:6, "Privat andel":8, "Offentlig andel":4, Internasjonalisering:6},
+  gronn:{Innovasjon:7, Teknologi:7, "Talent & kapasitet":7, "Økonomisk styrke":7, Bærekraft:9, "Privat andel":5, "Offentlig andel":7, Internasjonalisering:6},
+  intl:{Innovasjon:8, Teknologi:7, "Talent & kapasitet":7, "Økonomisk styrke":7, Bærekraft:7, "Privat andel":7, "Offentlig andel":5, Internasjonalisering:9},
+  balansert:{Innovasjon:7, Teknologi:7, "Talent & kapasitet":7, "Økonomisk styrke":7, Bærekraft:7, "Privat andel":6, "Offentlig andel":6, Internasjonalisering:7}
+};
+/* ---- Scenario-presets för makro ---- */
+const SCENARIO_PRESETS = {
+  normal: { rate:3.0, cycle:5, publicSpend:5, materials:5, sustainReq:5, techBreak:5, regLevel:5, globalEconomy:6 },
+  low:    { rate:2.0, cycle:3, publicSpend:6, materials:4, sustainReq:5, techBreak:5, regLevel:6, globalEconomy:3 },
+  boom:   { rate:4.0, cycle:8, publicSpend:4, materials:7, sustainReq:5, techBreak:6, regLevel:5, globalEconomy:8 },
+  geo:    { rate:4.5, cycle:4, publicSpend:7, materials:8, sustainReq:6, techBreak:5, regLevel:7, globalEconomy:3 },
+  tech:   { rate:3.0, cycle:6, publicSpend:6, materials:5, sustainReq:6, techBreak:9, regLevel:5, globalEconomy:7 },
+  green:  { rate:3.0, cycle:6, publicSpend:7, materials:6, sustainReq:9, techBreak:7, regLevel:7, globalEconomy:6 },
+  ai:     { rate:1.5, cycle:7, publicSpend:5, materials:4, sustainReq:6, techBreak:10, regLevel:7, globalEconomy:8 },
+  klima:  { rate:4.0, cycle:2, publicSpend:8, materials:9, sustainReq:10, techBreak:6, regLevel:8, globalEconomy:2 },
+  alien:  { rate:2.5, cycle:4, publicSpend:9, materials:7, sustainReq:6, techBreak:9, regLevel:8, globalEconomy:4 }
+};
+/* ---- Avleder historikk: omsetning (MNOK), resultat (MNOK), margin (%) ---- */
+function toIndex2020(arr){ const base = arr[0] || 1; return arr.map(v=> +((v/base)*100).toFixed(1)); }
+const FALLBACK_INDEX_2020_2024_2024BASE = {"Dark Design Group":[90,95,99,96,100],"Lund Hagem Arkitekter AS":[92,97,102,99,103]};
+const REVENUE_ABS_MNOK = {};
+firms.forEach(f=>{
+  const n=f.name; const raw = REVENUE_2020_2024[n];
+  if (raw){ REVENUE_ABS_MNOK[n]=raw.map(v=> +(v/1000).toFixed(1)); }
+  else { const idx=FALLBACK_INDEX_2020_2024_2024BASE[n]||[90,95,99,96,100]; const b=f.revenue; REVENUE_ABS_MNOK[n]=idx.map(v=> +(b*(v/100)).toFixed(1)); }
+});
+function clamp(v,a,b){return Math.max(a, Math.min(b, v));}
+function baseMarginPctFor(f){ const p=f.params; let m=5 + 1.2*(p["Økonomisk styrke"]-6) + 0.8*(p["Talent & kapasitet"]-6) + 0.5*(p["Teknologi"]-6) + 0.3*(p["Innovasjon"]-6) - 0.4*(p["Offentlig andel"]-6) + 0.2*(p["Privat andel"]-6); return +clamp(m,4,22).toFixed(1); }
+const MARGIN_PCT = {}; const PROFIT_ABS_MNOK = {};
+firms.forEach(f=>{ const m=baseMarginPctFor(f); MARGIN_PCT[f.name]=[m,m,m,m,m]; const rev=REVENUE_ABS_MNOK[f.name]; PROFIT_ABS_MNOK[f.name]=rev.map(r=> +(r*m/100).toFixed(1)); });
+const BASE_REVENUE_IDX = {}; const BASE_PROFIT_IDX = {};
+firms.forEach(f=>{ BASE_REVENUE_IDX[f.name]=toIndex2020(REVENUE_ABS_MNOK[f.name]); BASE_PROFIT_IDX[f.name]=toIndex2020(PROFIT_ABS_MNOK[f.name]); });
+/* ---- Breakpoints ---- */
+const breakpoints = {}; let visibleEnd = 2026;
+/* ---- Helpers ---- */
+const chart = document.getElementById('chart');
+const legend = document.getElementById('legend');
+const metricSelect = document.getElementById('metricSelect');
+const statsTitleEl = document.getElementById('statsTitle');
+let currentMetric = 'revenue';
+let useIndex = true; const indexToggle = document.getElementById('indexToggle');
+if (indexToggle){ indexToggle.addEventListener('change', e=>{ useIndex = e.target.checked; draw(); }); }
+if (metricSelect){ metricSelect.addEventListener('change', e=>{
+  currentMetric = e.target.value;
+  if(currentMetric==='margin'){ useIndex=false; if(indexToggle){ indexToggle.checked=false; indexToggle.disabled=true; } }
+  else { if(indexToggle){ indexToggle.disabled=false; indexToggle.checked=useIndex; } }
+  draw();
+}); }
+/* ---- Init: kun A-Lab synlig og valgt ---- */
+let selectedFirmName = 'A-Lab AS';
+const visible = Object.fromEntries(firms.map(f => [f.name, f.name === 'A-Lab AS']));
+const firmSelect = document.getElementById('firmSelect');
+const strategySelect = document.getElementById('strategySelect');
+const scenarioSelect = document.getElementById('scenarioSelect');
+const nextYearBadge = document.getElementById('nextYearBadge');
+/* ---- Legend ---- */
+function renderLegend(){
+  legend.innerHTML='';
+  const sorted=[...firms].sort((a,b)=>a.name.localeCompare(b.name,'nb'));
+  sorted.forEach(f=>{
+    const item=document.createElement('div');item.className='legend-item';
+    const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!visible[f.name];cb.disabled=f.isDark;cb.onchange=()=>{visible[f.name]=cb.checked;draw();};
+    const dot=document.createElement('div');dot.className='legend-dot';dot.style.background=f.color;
+    const name=document.createElement('span');name.className='legend-name';name.textContent=f.name;
+    const tip=document.createElement('div');tip.className='tooltip';
+    let rows=`<div class="tooltip-row"><span class="tooltip-label">Omsetning:</span><span class="tooltip-value">${f.revenue.toFixed(1)} MNOK</span></div>
+      <div class="tooltip-row"><span class="tooltip-label">Ansatte:</span><span class="tooltip-value">${f.staff}</span></div>`;
+    const paramOrder=["Innovasjon","Bærekraft","Teknologi","Økonomisk styrke","Talent & kapasitet","Offentlig andel","Privat andel","Internasjonalisering"];
+    paramOrder.forEach(k=>{ if(f.params[k]!==undefined){ rows+=`<div class="tooltip-row"><span class="tooltip-label">${k}:</span><span class="tooltip-value">${f.params[k]}/10</span></div>`; } });
+    item.appendChild(cb);item.appendChild(dot);item.appendChild(name);tip.innerHTML=rows;item.appendChild(tip);legend.appendChild(item);
+  });
+}
+/* ---- Firm dropdown: alfabetisk ---- */
+function populateFirmSelect(){
+  if (!firmSelect) return;
+  firmSelect.innerHTML = '';
+  const sorted=[...firms].sort((a,b)=>a.name.localeCompare(b.name,'nb'));
+  sorted.forEach(f=>{
+    const opt=document.createElement('option');
+    opt.value=f.name; opt.textContent=f.name; if(f.name===selectedFirmName) opt.selected=true; firmSelect.appendChild(opt);
+  });
+}
+function updateStrategyBubbles(){
+  const map={pInv:'pInvV',pSus:'pSusV',pInt:'pIntV',pPub:'pPubV',pPriv:'pPrivV',pTech:'pTechV',pTal:'pTalV',pFin:'pFinV'};
+  Object.entries(map).forEach(([id,lab])=>{ const el=document.getElementById(id); const lb=document.getElementById(lab); if(el&&lb){ lb.textContent=el.value; }});
+}
+function setSlidersFromParams(params){
+  const map={pInv:'Innovasjon',pSus:'Bærekraft',pInt:'Internasjonalisering',pPub:'Offentlig andel',pPriv:'Privat andel',pTech:'Teknologi',pTal:'Talent & kapasitet',pFin:'Økonomisk styrke'};
+  Object.entries(map).forEach(([id,key])=>{ const el=document.getElementById(id); if(!el) return; const v=params[key]; if(typeof v==='number'){ el.value=v; }});
+  updateStrategyBubbles(); draw();
+}
+function setSelectedFirm(name){
+  selectedFirmName = name;
+  firms.forEach(f=> f.isDark = (f.name===name));
+  visible[name]=true;
+  renderLegend();
+  const f=firms.find(x=>x.name===name); if (f) setSlidersFromParams(f.params);
+  if (strategySelect) strategySelect.value='egen';
+  draw();
+}
+if (firmSelect){ firmSelect.addEventListener('change', e=> setSelectedFirm(e.target.value)); }
+/* ---- Strategi presets ---- */
+if (strategySelect){
+  strategySelect.addEventListener('change', e=>{
+    const key=e.target.value; const preset=STRATEGY_PRESETS[key];
+    if (!preset){ const f=firms.find(x=>x.name===selectedFirmName); if (f) setSlidersFromParams(f.params); return; }
+    setSlidersFromParams(preset);
+  });
+}
+/* ---- Läs kontroller ---- */
+function macroNow(){
+  return {
+    rate:+document.getElementById('rate').value,
+    cycle:+document.getElementById('cycle').value,
+    materials:+document.getElementById('materials').value,
+    sustainReq:+document.getElementById('sustainReq').value,
+    techBreak:+document.getElementById('techBreak').value,
+    regLevel:+document.getElementById('regLevel').value,
+    publicSpend:+document.getElementById('publicSpend').value,
+    globalEconomy:+document.getElementById('globalEconomy').value
+  };
+}
+function darkNow(){return{Innovasjon:+document.getElementById('pInv').value,Bærekraft:+document.getElementById('pSus').value,Internasjonalisering:+document.getElementById('pInt').value,"Offentlig andel":+document.getElementById('pPub').value,"Privat andel":+document.getElementById('pPriv').value,Teknologi:+document.getElementById('pTech').value,"Talent & kapasitet":+document.getElementById('pTal').value,"Økonomisk styrke":+document.getElementById('pFin').value}};
+['rate'].forEach(id=>document.getElementById(id).addEventListener('input',e=>{document.getElementById('rateVal').textContent=e.target.value; draw();}));
+['pInv','pSus','pInt','pPub','pPriv','pTech','pTal','pFin'].forEach(id=>{const map={pInv:'pInvV',pSus:'pSusV',pInt:'pIntV',pPub:'pPubV',pPriv:'pPrivV',pTech:'pTechV',pTal:'pTalV',pFin:'pFinV'};document.getElementById(id).addEventListener('input',e=>{document.getElementById(map[id]).textContent=e.target.value;draw();});});
+['cycle','materials','sustainReq','techBreak','regLevel','publicSpend','globalEconomy'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{updateMacroLabels();draw();}));
+/* ---- Koppla sliders till scenario = egen vid manuell ändring ---- */
+['rate','cycle','materials','sustainReq','techBreak','regLevel','publicSpend','globalEconomy'].forEach(id=>{
+  const el=document.getElementById(id);
+  if (el) el.addEventListener('input', ()=>{ if (scenarioSelect) scenarioSelect.value='egen'; });
+});
+function updateMacroLabels(){
+  const triBucket=v=>v<=3?0:(v<=7?1:2);
+  const set=(id,text)=>{const el=document.getElementById(id); if(el) el.textContent=text;};
+  set('cycleLabel',['Lav','Normal','Høy'][triBucket(+document.getElementById('cycle').value)]);
+  set('materialsLabel',['Lave','Middels','Høye'][triBucket(+document.getElementById('materials').value)]);
+  set('sustainReqLabel',['Lave','Moderate','Strenge'][triBucket(+document.getElementById('sustainReq').value)]);
+  set('techBreakLabel',['Ingen','Moderate','Store'][triBucket(+document.getElementById('techBreak').value)]);
+  set('regLevelLabel',['Lavt','Middels','Høyt'][triBucket(+document.getElementById('regLevel').value)]);
+  set('publicSpendLabel',['Kutt','Normal','Vekst'][triBucket(+document.getElementById('publicSpend').value)]);
+  set('globEcoLabel',['Svak','Normal','Sterk'][triBucket(+document.getElementById('globalEconomy').value)]);
+}
+updateMacroLabels();
+updateStrategyBubbles();
+/* ---- Scenario-dropdown logik ---- */
+if (scenarioSelect){
+  scenarioSelect.addEventListener('change', e=>{
+    const key = e.target.value;
+    if (key === 'egen') return;
+    const preset = SCENARIO_PRESETS[key];
+    if (!preset) return;
+    const setVal = (id, v)=>{ const el=document.getElementById(id); if(el){ el.value = v; } };
+    setVal('rate', preset.rate); document.getElementById('rateVal').textContent = (+preset.rate).toFixed(1);
+    setVal('cycle', preset.cycle);
+    setVal('publicSpend', preset.publicSpend);
+    setVal('materials', preset.materials);
+    setVal('sustainReq', preset.sustainReq);
+    setVal('techBreak', preset.techBreak);
+    setVal('regLevel', preset.regLevel);
+    setVal('globalEconomy', preset.globalEconomy);
+    updateMacroLabels();
+    draw();
+  });
+}
+/* ---- Breakpoint UI ---- */
+function nextSelectableYear(){ const years=Object.keys(breakpoints).map(Number); const last=years.length?Math.max(...years):2025; return Math.min(2035, last+1); }
+function refreshBPSelect(){ const y=nextSelectableYear(); if (nextYearBadge) nextYearBadge.textContent=String(y); }
+function updateBreakpointUI(){ const ar=document.getElementById('activeRange'); if (ar) ar.textContent=`2020→${visibleEnd}`; const cnt=document.getElementById('bpCount'); if (cnt) cnt.textContent=Object.keys(breakpoints).length; refreshBPSelect(); }
+document.getElementById('saveBP').onclick=()=>{ const year=nextSelectableYear(); if (breakpoints[year]) return; breakpoints[year]={ macro: macroNow(), dark: darkNow(), darkTarget: selectedFirmName }; visibleEnd=Math.min(2035, Math.max(visibleEnd, year+1)); updateBreakpointUI(); draw(); };
+/* ---- Tøm siste (ikke alle) ---- */
+document.getElementById('clearBP').onclick=()=>{ 
+  const years = Object.keys(breakpoints).map(Number);
+  if (!years.length) return;
+  const last = Math.max(...years);
+  deleteBreakpoint(last);
+};
+function deleteBreakpoint(year){
+  delete breakpoints[year];
+  const visYears=Object.keys(breakpoints).map(Number).filter(y=>y<=visibleEnd);
+  const maxBP=visYears.length?Math.max(...visYears):null;
+  visibleEnd = maxBP ? Math.max(visibleEnd, maxBP+1) : 2026;
+  updateBreakpointUI(); 
+  draw(); 
+}
+/* ---- Modell ---- */
+function toShare(pub, priv){const s=pub+priv||1;return{pub:pub/s,priv:priv/s}};
+function macroDelta(m,p){
+  const sh=toShare(p["Offentlig andel"], p["Privat andel"]);
+  let pct=0;
+  const rateDelta = (m.rate - 3.0);
+  pct += -1.2 * rateDelta * sh.priv;
+  pct += -0.4 * rateDelta * sh.pub;
+  pct += ((m.cycle - 5)/5) * 8;
+  pct += 2 - ((m.materials - 1) * (8/9));
+  pct += 2 - ((m.regLevel - 1) * (5/9));
+  const pubFactor = p["Offentlig andel"]/10; 
+  pct += ((m.publicSpend - 5)/5) * (6 * sh.pub * pubFactor);
+  const sr = m.sustainReq; const baseHigh = (p["Bærekraft"]>=8) ? (p["Bærekraft"]-7)*0.8 : -3;
+  if (sr >= 5) pct += (sr-5) * (baseHigh/5); else pct += (5 - sr) * (1/4);
+  const tb = m.techBreak; const techFactor = (p["Teknologi"]>=7) ? (p["Teknologi"]-6)*1.0 : 0.6; pct += ((tb - 5)/5) * techFactor;
+  const intlFactor = Math.max(0, Math.min(1, (p["Internasjonalisering"]-5)/5)); pct += ((m.globalEconomy - 5)/5) * (2 + 4*intlFactor);
+  return pct/100;
+}
+function darkDelta(d,m){
+  let pct=0;
+  pct+=(d.Innovasjon-6)*0.8; 
+  pct+=(d.Teknologi-6)*0.7; 
+  pct+=(d["Økonomisk styrke"]-6)*0.6; 
+  pct+=(d["Talent & kapasitet"]-6)*0.5; 
+  pct+=(d.Bærekraft-6)*0.4; 
+  pct+=(d["Offentlig andel"]-6)*0.3; 
+  pct+=(d["Privat andel"]-6)*0.3; 
+  pct+=(d.Internasjonalisering-6)*0.2;
+  if (m.sustainReq>=8) pct+=(d.Bærekraft-6)*0.3; 
+  if (m.techBreak>=7) pct+=(d.Teknologi-6)*0.2; 
+  if (m.techBreak>=9) pct+=(d.Teknologi-6)*0.4; 
+  if (m.publicSpend>=7) pct+=(d["Offentlig andel"]-6)*0.2; 
+  if (m.cycle>=7){ pct+=(d["Privat andel"]-6)*0.2; pct+=(d.Internasjonalisering-6)*0.15; }
+  if (m.globalEconomy>=7){ pct+=(d.Internasjonalisering-6)*0.15; }
+  if (m.globalEconomy<=3){ pct-=(d.Internasjonalisering-6)*0.10; }
+  if (m.cycle<=3) pct+=(d["Økonomisk styrke"]-6)*0.3; 
+  return pct/100;
+}
+function getBaseSeries(metric, name){
+  if (metric==='revenue') return useIndex ? toIndex2020(REVENUE_ABS_MNOK[name]) : REVENUE_ABS_MNOK[name];
+  if (metric==='profit')  return useIndex ? toIndex2020(PROFIT_ABS_MNOK[name])  : PROFIT_ABS_MNOK[name];
+  if (metric==='margin')  return MARGIN_PCT[name];
+  return toIndex2020(REVENUE_ABS_MNOK[name]);
+}
+function multipliers(metric){
+  if (metric==='revenue') return {macro:1.0, strat:0.5, marginScale:1.0};
+  if (metric==='profit')  return {macro:0.8, strat:1.0, marginScale:1.0};
+  if (metric==='margin')  return {macro:0.3, strat:1.2, marginScale:0.6};
+  return {macro:1.0, strat:0.5, marginScale:1.0};
+}
+function series(){
+  const out={}; const visYears=YEARS.filter(y=>y<=visibleEnd); const bpYears=Object.keys(breakpoints).map(Number).sort((a,b)=>a-b);
+  firms.forEach(f=>{
+    const base=getBaseSeries(currentMetric, f.name); const vals=[...base]; let currentVal=vals[vals.length-1]; let cursorStart=2025;
+    for (let i=0;i<bpYears.length && cursorStart<=visibleEnd;i++){
+      const segEnd=Math.min(bpYears[i], visibleEnd); if (segEnd<cursorStart) continue; const params=breakpoints[bpYears[i]];
+      for (let y=cursorStart;y<=segEnd;y++){
+        const mul=multipliers(currentMetric);
+        const gM=macroDelta(params.macro, f.params); const gS=(f.name===params.darkTarget)?darkDelta(params.dark, params.macro):0; let g=gM*mul.macro + gS*mul.strat; if(currentMetric==='margin') g*=mul.marginScale;
+        currentVal = currentMetric==='margin' ? Math.max(0, currentVal + currentVal*g) : (currentVal + currentVal*g); vals.push(currentVal);
+      }
+      cursorStart=segEnd+1;
+    }
+    if (cursorStart<=visibleEnd){
+      const mLive=macroNow(); const dLive=(f.name===selectedFirmName)?darkNow():null;
+      for (let y=cursorStart;y<=visibleEnd;y++){
+        const mul=multipliers(currentMetric);
+        const gM=macroDelta(mLive, f.params); const gS=dLive?darkDelta(dLive, mLive):0; let g=gM*mul.macro + gS*mul.strat; if(currentMetric==='margin') g*=mul.marginScale;
+        currentVal = currentMetric==='margin' ? Math.max(0, currentVal + currentVal*g) : (currentVal + currentVal*g); vals.push(currentVal);
+      }
+    }
+    out[f.name]=vals.slice(0, visYears.length);
+  });
+  return{data:out, years:YEARS.filter(y=>y<=visibleEnd)};
+}
+/* ---- Rita ---- */
+function draw(){
+  const titleEl=document.getElementById('chartTitle');
+  let label;
+  if (currentMetric==='revenue') label = useIndex ? 'Omsetningsutvikling' : 'Omsetning';
+  else if (currentMetric==='profit') label = useIndex ? 'Resultatutvikling' : 'Resultat';
+  else label = 'Marginer';
+  if (titleEl){
+    if (currentMetric==='margin') titleEl.textContent = `${label} 2020-${visibleEnd} (%)`;
+    else if (useIndex) titleEl.textContent = `${label} 2020-${visibleEnd} (indeks 2020=100)`;
+    else titleEl.textContent = `${label} 2020-${visibleEnd} (MNOK)`;
+  }
+  if (statsTitleEl) statsTitleEl.textContent = `Toppliste, ${currentMetric==='revenue'?'Omsetning':currentMetric==='profit'?'Resultat':'Marginer'}`;
+  const svg=chart; svg.innerHTML=''; const w=svg.clientWidth, h=svg.clientHeight; const padL=50,padR=20,padT=30,padB=70; const plotW=w-padL-padR, plotH=h-padT-padB;
+  const {data:S, years:visYears}=series();
+  // Autoskalér y basert på synlige selskaper
+  let min=Infinity, max=-Infinity, any=false;
+  firms.forEach(f=>{ if(visible[f.name]){ const a=S[f.name]; if(!a) return; any=true; min=Math.min(min,...a); max=Math.max(max,...a); } });
+  if(!any){ Object.values(S).forEach(a=>{ min=Math.min(min, ...a); max=Math.max(max, ...a); }); }
+  let yMin,yMax,step;
+  if (currentMetric==='margin'){
+    yMin=Math.floor(min);
+    yMax=Math.ceil(max);
+    step=Math.max(1, Math.round((yMax-yMin)/6));
+  } else if (useIndex){
+    yMin=Math.floor((min-5)/5)*5; yMax=Math.ceil((max+5)/5)*5; step=10;
+  } else {
+    const niceStep=(range)=>{ const rough=Math.max(range/6,1e-6); const pow=Math.pow(10, Math.floor(Math.log10(rough))); const rem=rough/pow; const m = rem<=1?1:rem<=2?2:rem<=5?5:10; return m*pow; };
+    step = niceStep(max-min);
+    yMin = Math.floor(min/step)*step;
+    yMax = Math.ceil(max/step)*step;
+  }
+  const x=i=>padL+(i/Math.max(1,(visYears.length-1)))*plotW; const y=v=>padT+(1-(v-yMin)/(yMax-yMin))*plotH; const formatY = (v)=> (currentMetric==='margin' ? `${v}%` : (!useIndex ? Math.round(v).toLocaleString('no-NO') : v));
+  for(let gy=yMin; gy<=yMax; gy+=step){
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line"); line.setAttribute("x1",padL); line.setAttribute("x2",padL+plotW); line.setAttribute("y1",y(gy)); line.setAttribute("y2",y(gy)); line.setAttribute("stroke","#2a2d36"); line.setAttribute("stroke-width","0.5"); svg.appendChild(line);
+    const text=document.createElementNS("http://www.w3.org/2000/svg","text"); text.setAttribute("x",padL-8); text.setAttribute("y",y(gy)+4); text.setAttribute("fill","#9aa0aa"); text.setAttribute("font-size","10"); text.setAttribute("text-anchor","end"); text.textContent = formatY(gy); svg.appendChild(text);
+  }
+  // Breakpoint linjer uten hover-sletting
+  const bpYears=Object.keys(breakpoints).map(Number).sort((a,b)=>a-b); const latestVisibleBP=bpYears.filter(y=>y<=visibleEnd).slice(-1)[0];
+  bpYears.forEach(bpY=>{const idx=visYears.indexOf(bpY); if(idx===-1) return; const g=document.createElementNS("http://www.w3.org/2000/svg","g"); g.setAttribute("data-bp",bpY);
+    const line=document.createElementNS("http://www.w3.org/2000/svg","line"); line.setAttribute("x1",x(idx)); line.setAttribute("x2",x(idx)); line.setAttribute("y1",padT); line.setAttribute("y2",padT+plotH); line.setAttribute("stroke","#4ecdc4"); line.setAttribute("stroke-width","0.6"); g.appendChild(line);
+    const label=document.createElementNS("http://www.w3.org/2000/svg","text"); label.setAttribute("x",x(idx)+3); label.setAttribute("y",padT-5); label.setAttribute("fill","#4ecdc4"); label.setAttribute("font-size","10"); label.setAttribute("font-weight","bold"); label.textContent="BP "+bpY; g.appendChild(label);
+    svg.appendChild(g);
+  });
+  const splitYear = latestVisibleBP ?? 2025; const splitIdx = visYears.indexOf(splitYear);
+  firms.forEach(f=>{
+    if(f.name===selectedFirmName || !visible[f.name]) return; const arr=series().data[f.name];
+    if (splitIdx>=0){ const p1=document.createElementNS("http://www.w3.org/2000/svg","path"); let d1=`M ${x(0)} ${y(arr[0])}`; for(let i=1;i<=splitIdx;i++) d1+=` L ${x(i)} ${y(arr[i])}`; p1.setAttribute("d",d1); p1.setAttribute("fill","none"); p1.setAttribute("stroke",f.color); p1.setAttribute("stroke-width","1.2"); p1.setAttribute("opacity","0.35"); svg.appendChild(p1);} 
+    if (splitIdx < arr.length-1){ const p2=document.createElementNS("http://www.w3.org/2000/svg","path"); let d2=`M ${x(Math.max(0,splitIdx))} ${y(arr[Math.max(0,splitIdx)])}`; for(let i=Math.max(1,splitIdx+1); i<arr.length; i++) d2+=` L ${x(i)} ${y(arr[i])}`; p2.setAttribute("d",d2); p2.setAttribute("fill","none"); p2.setAttribute("stroke",f.color); p2.setAttribute("stroke-width","1.2"); p2.setAttribute("opacity","0.35"); p2.setAttribute("stroke-dasharray","6,4"); svg.appendChild(p2);} 
+  });
+  const darkFirm=firms.find(f=>f.name===selectedFirmName); if(darkFirm && visible[darkFirm.name]){ const arr=series().data[darkFirm.name];
+    const glow=document.createElementNS("http://www.w3.org/2000/svg","path"); let dG=`M ${x(0)} ${y(arr[0])}`; for(let i=1;i<arr.length;i++) dG+=` L ${x(i)} ${y(arr[i])}`; glow.setAttribute("d",dG); glow.setAttribute("fill","none"); glow.setAttribute("stroke",darkFirm.color); glow.setAttribute("stroke-width","8"); glow.setAttribute("opacity","0.3"); glow.setAttribute("filter","blur(8px)"); svg.appendChild(glow);
+    if(splitIdx>=0){ const p1=document.createElementNS("http://www.w3.org/2000/svg","path"); let d1=`M ${x(0)} ${y(arr[0])}`; for(let i=1;i<=splitIdx;i++) d1+=` L ${x(i)} ${y(arr[i])}`; p1.setAttribute("d",d1); p1.setAttribute("fill","none"); p1.setAttribute("stroke",darkFirm.color); p1.setAttribute("stroke-width","3"); svg.appendChild(p1);} 
+    if(splitIdx < arr.length-1){ const p2=document.createElementNS("http://www.w3.org/2000/svg","path"); let d2=`M ${x(Math.max(0,splitIdx))} ${y(arr[Math.max(0,splitIdx)])}`; for(let i=Math.max(1,splitIdx+1); i<arr.length; i++) d2+=` L ${x(i)} ${y(arr[i])}`; p2.setAttribute("d",d2); p2.setAttribute("fill","none"); p2.setAttribute("stroke",darkFirm.color); p2.setAttribute("stroke-width","3"); p2.setAttribute("stroke-dasharray","6,4"); svg.appendChild(p2);} }
+  
+  // X-axis (years at bottom)
+  visYears.forEach((year, i) => {
+    const tx = document.createElementNS("http://www.w3.org/2000/svg","text");
+    tx.setAttribute("x", x(i));
+    tx.setAttribute("y", padT + plotH + 24);
+    tx.setAttribute("fill", "#9aa0aa");
+    tx.setAttribute("font-size", "10");
+    tx.setAttribute("text-anchor", "middle");
+    tx.textContent = year;
+    svg.appendChild(tx);
+  });
+
+  // X-axis baseline
+  const xLine = document.createElementNS("http://www.w3.org/2000/svg","line");
+  xLine.setAttribute("x1", padL);
+  xLine.setAttribute("x2", padL + plotW);
+  xLine.setAttribute("y1", padT + plotH);
+  xLine.setAttribute("y2", padT + plotH);
+  xLine.setAttribute("stroke", "#2a2d36");
+  xLine.setAttribute("stroke-width", "0.6");
+  svg.appendChild(xLine);
+
+  updateStats(visYears);
+}
+function updateStats(visYears){
+  const S = series().data;
+  const stats = document.getElementById('stats-content');
+  const lastIdx = visYears.length - 1;
+  const ranked = firms.map(f=>{
+    const vals = S[f.name] || [];
+    const current = vals[lastIdx] ?? 0;
+    const startIdx = visYears.indexOf(2025);
+    const start = startIdx>=0 ? (vals[startIdx] ?? vals[0] ?? 0) : (vals[0] ?? 0);
+    const change = start ? (current-start)/start*100 : 0;
+    return {f, current, change: +change.toFixed(1)};
+  }).sort((a,b)=> b.change - a.change).slice(0,8);
+  const itemHTML = (obj, idx) => {
+    const {f, current, change} = obj;
+    const color = change >= 0 ? '#4ecdc4' : '#ff6b6b';
+    const unit = currentMetric==='margin' ? '%' : (!useIndex ? ' MNOK' : '');
+    const valText = currentMetric==='margin' ? current.toFixed(1) : (!useIndex ? Math.round(current).toLocaleString('no-NO') : current.toFixed(1));
+    return `
+      <div style="padding:6px 0;border-bottom:1px solid #2a2d36;font-size:11px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="rank-badge">${idx+1}</span>
+            <span style="color:${f.name===selectedFirmName?'var(--accent)':'var(--text)'};font-weight:${f.name===selectedFirmName?600:400}">${f.name}</span>
+          </div>
+          <span style="color:${color};font-weight:600">${change>=0?'↑':'↓'}${Math.abs(change).toFixed(1)}%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:2px;">
+          <span style="color:var(--muted);font-size:10px">${visYears[lastIdx]}: ${valText}${unit}</span>
+          <span style="color:var(--muted);font-size:10px">Fra 2025</span>
+        </div>
+      </div>`;
+  };
+  const colA = ranked.slice(0,4).map((obj, i)=> itemHTML(obj, i)).join('');
+  const colB = ranked.slice(4,8).map((obj, i)=> itemHTML(obj, i+4)).join('');
+  stats.innerHTML = `<div class="stats-grid"><div>${colA}</div><div>${colB}</div></div>`;
+}
+// Init
+function refreshBPSelect(){ const y=Object.keys(breakpoints).length?Math.max(...Object.keys(breakpoints).map(Number))+1:2026; if (nextYearBadge) nextYearBadge.textContent=String(Math.min(2035,y)); }
+refreshBPSelect();
+(function init(){ populateFirmSelect(); setSelectedFirm(selectedFirmName); draw(); })();
+</script>
+</body>
+</html>
