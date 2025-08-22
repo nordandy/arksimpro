@@ -1314,5 +1314,50 @@ cₜ = c_base + c_makro + c_strategi + c_interaksjoner + c_tek
   }
 })();
 </script>
+
+/* __ARS__ mobile gate v2 */
+(function(){
+  try{
+    function isTouchPointer(){ try { return matchMedia('(pointer: coarse)').matches; } catch(e){ return false; } }
+    function isMobileUA(){
+      var ua = (navigator.userAgent||'').toLowerCase();
+      var isIOS = /iphone|ipod|ipad/.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+      var isAndroid = /android/.test(ua);
+      return isIOS || isAndroid;
+    }
+    var shouldGate = isTouchPointer() || isMobileUA();
+    if(!shouldGate) return; // do not block desktop
+    // Build minimal overlay if not present
+    if(!document.getElementById('arskp-landing')){
+      var ov = document.createElement('div');
+      ov.id = 'arskp-landing';
+      ov.style.position = 'fixed';
+      ov.style.inset = '0';
+      ov.style.background = 'rgba(11,12,16,0.98)';
+      ov.style.zIndex = '99999';
+      ov.style.display = 'flex';
+      ov.style.alignItems = 'center';
+      ov.style.justifyContent = 'center';
+      ov.innerHTML = '<div class="panel arskp-panel" style="max-width:540px;text-align:center;">'
+        + '<div class="arskp-title" style="font-size:18px;margin-bottom:8px;">Ikke optimalisert for mobil/nettbrett</div>'
+        + '<div class="arskp-sub" style="font-size:14px;color:var(--muted);margin-bottom:16px;">Opplevelsen kan være begrenset. Fortsett på eget ansvar.</div>'
+        + '<div class="arskp-actions" style="display:flex;gap:12px;justify-content:center;">'
+        + '<button id="arskp-continue" class="btn" style="padding:10px 14px;font-weight:600;">Fortsett likevel</button>'
+        + '<button id="arskp-cancel" class="btn" style="padding:10px 14px;">Avbryt</button>'
+        + '</div>'
+        + '</div>';
+      document.body.appendChild(ov);
+      var cont = document.getElementById('arskp-continue');
+      var canc = document.getElementById('arskp-cancel');
+      if (cont) cont.addEventListener('click', function(){ ov.remove(); });
+      if (canc) canc.addEventListener('click', function(){ location.href = 'about:blank'; });
+    } else {
+      // Ensure it's visible
+      var l = document.getElementById('arskp-landing');
+      l.style.display = 'flex';
+    }
+  }catch(e){/* no-op */}
+})();
+
 </body>
 </html>
