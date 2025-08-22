@@ -163,20 +163,6 @@
   .chart{ min-height: 320px; }
 }
 </style>
-
-<style id="guard-rails">
-/* Center the app on ultra-wide and cap max width to avoid stretched layouts at low zoom */
-.app{ max-width: 1760px; margin-left:auto; margin-right:auto; }
-/* Keep sidebar panels from collapsing at odd zoom levels */
-@media (min-width: 1200px){
-  .app{ grid-template-columns: minmax(320px, 340px) minmax(300px, 320px) 1fr; }
-}
-/* Mid widths: ensure chart area has decent height and legend scrolls if needed */
-@media (max-width: 1200px){
-  .chart{ min-height: 420px; }
-  .legend{ max-height: 180px; overflow:auto; }
-}
-</style>
 </head>
 <body>
 <div class="app">
@@ -277,6 +263,7 @@
       <div class="tooltip-label">
         Dette er en helt unødvendig, men forhåpentligvis morsom simulator. Alt her er på liksom, tallene er syntetiske og resultatene har ingen prognoseverdi. Bruk den til å utforske ideer og diskutere med kollegaer, ikke til beslutninger.
       </div>
+<div class="small" style="margin-top:8px"><strong>Merk:</strong> Verktøyet kan fortsatt inneholde enkelte feil, og resultater kan være uforutsigbare.</div>
       <div class="stats-grid" style="margin-top:8px">
         <div class="small">
           • Velg kontor i «Kontor». A-Lab er valgt ved oppstart.<br>
@@ -418,6 +405,9 @@ const firmSelect = document.getElementById('firmSelect');
 const strategySelect = document.getElementById('strategySelect');
 const scenarioSelect = document.getElementById('scenarioSelect');
 const nextYearBadge = document.getElementById('nextYearBadge');
+/* Helper to strip trailing 'AS' in display lists */
+function displayName(name){ try { return name.replace(/\s+AS$/,''); } catch(e){ return name; } }
+
 /* ---- Legend ---- */
 function renderLegend(){
   legend.innerHTML='';
@@ -426,7 +416,7 @@ function renderLegend(){
     const item=document.createElement('div');item.className='legend-item';
     const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!visible[f.name];cb.disabled=f.isDark;cb.onchange=()=>{visible[f.name]=cb.checked;draw();};
     const dot=document.createElement('div');dot.className='legend-dot';dot.style.background=f.color;
-    const name=document.createElement('span');name.className='legend-name';name.textContent=f.name;
+    const name=document.createElement('span');name.className='legend-name';name.textContent = displayName(f.name);
     const tip=document.createElement('div');tip.className='tooltip';tip.style.display='none';
     let rows=`<div class="tooltip-row"><span class="tooltip-label">Omsetning:</span><span class="tooltip-value">${f.revenue.toFixed(1)} MNOK</span></div>
       <div class="tooltip-row"><span class="tooltip-label">Ansatte:</span><span class="tooltip-value">${f.staff}</span></div>`;
@@ -442,7 +432,7 @@ function populateFirmSelect(){
   const sorted=[...firms].sort((a,b)=>a.name.localeCompare(b.name,'nb'));
   sorted.forEach(f=>{
     const opt=document.createElement('option');
-    opt.value=f.name; opt.textContent=f.name; if(f.name===selectedFirmName) opt.selected=true; firmSelect.appendChild(opt);
+    opt.value=f.name; opt.textContent = displayName(f.name); if(f.name===selectedFirmName) opt.selected=true; firmSelect.appendChild(opt);
   });
 }
 function updateStrategyBubbles(){
@@ -810,7 +800,7 @@ function draw(){
   if (statsTitleEl){
     statsTitleEl.textContent = `${currentMetric==='revenue'?'Omsetning':currentMetric==='profit'?'Resultat':'Marginer'} ${visibleEnd} · Prognose`;
 }
-  const svg=chart; svg.innerHTML=''; const w=svg.clientWidth, h=svg.clientHeight; const padL=50,padR=20,padT=30,padB=70; const plotW=w-padL-padR, plotH=h-padT-padB;
+  const svg=chart; svg.innerHTML=''; const w=svg.clientWidth, h=svg.clientHeight; const padL=50,padR=20,padT=30,padB=74; const plotW=w-padL-padR, plotH=h-padT-padB;
   const seriesRes = series(); const S = seriesRes.data; const visYears = seriesRes.years;
   // Autoskalér y basert på synlige selskaper
   let min=Infinity, max=-Infinity, any=false;
@@ -886,6 +876,17 @@ function draw(){
   svg.appendChild(xLine);
   updateStats(S, visYears);
 }
+
+/* __ARS__ resize hooks inserted */
+try{
+  window.addEventListener('resize', ()=>{ requestAnimationFrame(draw); });
+  const _cp = document.querySelector('.chart-panel');
+  if (window.ResizeObserver && _cp){ new ResizeObserver(()=>{ requestAnimationFrame(draw); }).observe(_cp); }
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', ()=>{ setTimeout(draw, 0); });
+  } else { setTimeout(draw, 0); }
+}catch(e){}
+
 function updateStats(S, visYears){
   const stats = document.getElementById('stats-content');
   const lastIdx = visYears.length - 1;
@@ -1310,70 +1311,6 @@ cₜ = c_base + c_makro + c_strategi + c_interaksjoner + c_tek
     document.addEventListener('DOMContentLoaded', bindAboutLink, {once:true});
   } else {
     bindAboutLink();
-  }
-})();
-</script>
-
-<script>
-(function(){
-  const ALIASES = {
-    "Arkitektfirma Helen & Hard AS": "Helen&Hard"
-  };
-  function displayAlias(name){
-    if(ALIASES[name]) return ALIASES[name];
-    // strip trailing " AS"
-    return name.replace(/\s+AS$/,'').trim();
-  }
-  // Apply to firm select
-  function aliasFirmSelect(){
-    const sel = document.getElementById('firmSelect');
-    if(!sel) return;
-    for(const opt of sel.options){
-      if(opt && opt.textContent) opt.textContent = displayAlias(opt.textContent);
-    }
-  }
-  // Apply to legend items
-  function aliasLegend(){
-    const lg = document.querySelector('.legend');
-    if(!lg) return;
-    lg.querySelectorAll('.legend-item').forEach(li => {
-      const n = li.textContent.trim();
-      li.childNodes.forEach(node => {
-        if(node.nodeType === Node.TEXT_NODE && node.textContent.trim()){
-          node.textContent = displayAlias(node.textContent.trim()) + ' ';
-        }
-      });
-    });
-  }
-  // Apply to toplist/stats
-  function aliasStats(){
-    const sc = document.getElementById('stats-content');
-    if(!sc) return;
-    sc.querySelectorAll('*').forEach(el => {
-      if(el.firstChild && el.firstChild.nodeType===Node.TEXT_NODE){
-        el.firstChild.nodeValue = displayAlias(el.firstChild.nodeValue);
-      }
-    });
-  }
-  // Observe dynamic changes in legend and stats
-  function observeAliases(){
-    const targets = [document.querySelector('.legend'), document.getElementById('stats-content')];
-    targets.forEach(t => {
-      if(!t) return;
-      const obs = new MutationObserver(() => { aliasLegend(); aliasStats(); });
-      obs.observe(t, {childList:true, subtree:true});
-    });
-  }
-  function initAliases(){
-    aliasFirmSelect();
-    aliasLegend();
-    aliasStats();
-    observeAliases();
-  }
-  if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', initAliases, {once:true});
-  } else {
-    initAliases();
   }
 })();
 </script>
