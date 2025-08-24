@@ -180,9 +180,6 @@
         <option value="geo">Geopolitisk konflikt</option>
         <option value="tech">Teknologiskt genombrott</option>
         <option value="green">Grön omställning globalt</option>
-        <option value="ai">AI Singularity</option>
-        <option value="klima">Ekstrem klimakrise</option>
-        <option value="alien">Ekstraterrestrisk kontakt</option>
       </select>
     </div>
     <div class="control"><label><span>Rente</span><span class="value-bubble"><span id="rateVal">3.0</span>%</span></label><input id="rate" type="range" min="0" max="10" step="0.1" value="3"/></div>
@@ -348,11 +345,7 @@ const SCENARIO_PRESETS = {
   boom:   { rate:4.0, cycle:8, publicSpend:4, materials:7, sustainReq:5, techBreak:6, regLevel:5, globalEconomy:8 },
   geo:    { rate:4.5, cycle:4, publicSpend:7, materials:8, sustainReq:6, techBreak:5, regLevel:7, globalEconomy:3 },
   tech:   { rate:3.0, cycle:6, publicSpend:6, materials:5, sustainReq:6, techBreak:9, regLevel:5, globalEconomy:7 },
-  green:  { rate:3.0, cycle:6, publicSpend:7, materials:6, sustainReq:9, techBreak:7, regLevel:7, globalEconomy:6 },
-  ai:     { rate:1.5, cycle:7, publicSpend:5, materials:4, sustainReq:6, techBreak:10, regLevel:7, globalEconomy:8 },
-  klima:  { rate:4.0, cycle:2, publicSpend:8, materials:9, sustainReq:10, techBreak:6, regLevel:8, globalEconomy:2 },
-  alien:  { rate:2.5, cycle:4, publicSpend:9, materials:7, sustainReq:6, techBreak:9, regLevel:8, globalEconomy:4 }
-};
+  green:  { rate:3.0, cycle:6, publicSpend:7, materials:6, sustainReq:9, techBreak:7, regLevel:7, globalEconomy:6 }};
 /* ---- Avleder historikk: omsetning (MNOK), resultat (MNOK), margin (%) ---- */
 function toIndex2020(arr){ const base = arr[0] || 1; return arr.map(v=> +((v/base)*100).toFixed(1)); }
 const FALLBACK_INDEX_2020_2024_2024BASE = {"Dark Design Group":[90,95,99,96,100],"Lund Hagem Arkitekter AS":[92,97,102,99,103]};
@@ -1055,7 +1048,7 @@ try{ if (typeof draw==='function') draw(); }catch(e){}
   <section class="arskp-panel" id="arskp-landing">
     <div class="arskp-badge">ArkSim</div>
     <h1 class="arskp-title">ArkSim Pro*</h1>
-    <p class="arskp-sub">*Tallene er på liksom, men innsiktene kan være reelle, om du vil</p>
+    <p class="arskp-sub">*Dette er en alfa, en svært tidlig testversjon. Bruk den til å leke med scenarier, men forvent feil og uferdige deler. Tallene er på liksom, men innsiktene kan være reelle. Om du vil.</em></p>
     <div class="arskp-actions">
       <button class="btn btn-primary" id="arskp-open">Åpne simulator</button>
       <button class="btn" id="arskp-about-btn">Om verktøyet</button>
@@ -1073,7 +1066,7 @@ try{ if (typeof draw==='function') draw(); }catch(e){}
     </div>
   </div>
 
-  <p><em>ArkSim er en oppdiktet, pedagogisk simulator. Den bruker enkle, lineære antakelser for å illustrere hvordan interne valg (strategi) og ytre forhold (makro &amp; politikk) kan påvirke et arkitektkontors økonomi. Resultatene har ingen prognoseverdi.</em></p>
+  <p><em>ArkSim er en oppdiktet, pedagogisk simulator. Den bruker enkle, lineære antakelser for å illustrere hvordan interne valg (strategi) og ytre forhold (makro &amp; politikk) kan påvirke et arkitektkontors økonomi. Resultatene har ingen prognoseverdi. Enkelte av parameterne er løst inspirert av PESTEL-rammeverket, men uten å dekke alle dimensjonene fullt ut.</em></p>
   <p><strong>Om kontor-vektingen:</strong> Hvert kontor har forhåndsinnstilte nivåer for innovasjon, teknologi,
   kapasitet, salg, bærekraft og offentlig/privat-mix. Disse er grove, kvalitative anslag basert på offentlige
   beskrivelser av porteføljer, størrelse og internasjonalisering. De er ikke fasit og brukes kun for å variere
@@ -1340,7 +1333,7 @@ cₜ = c_base + c_makro + c_strategi + c_interaksjoner + c_tek
       ov.style.justifyContent = 'center';
       ov.innerHTML = '<div class="panel arskp-panel" style="max-width:540px;text-align:center;">'
         + '<div class="arskp-title" style="font-size:18px;margin-bottom:8px;">Ikke optimalisert for mobil/nettbrett</div>'
-        + '<div class="arskp-sub" style="font-size:14px;color:var(--muted);margin-bottom:16px;">Opplevelsen kan være begrenset. Fortsett på eget ansvar.</div>'
+        + '<div class="arskp-sub" style="font-size:14px;color:var(--muted);margin-bottom:16px;">*Dette er en alfa, en svært tidlig testversjon. Bruk den til å leke med scenarier, men forvent feil og uferdige deler. Tallene er på liksom, men innsiktene kan være reelle. Om du vil.</em></div>'
         + '<div class="arskp-actions" style="display:flex;gap:12px;justify-content:center;">'
         + '<button id="arskp-continue" class="btn" style="padding:10px 14px;font-weight:600;">Fortsett likevel</button>'
         + '<button id="arskp-cancel" class="btn" style="padding:10px 14px;">Avbryt</button>'
