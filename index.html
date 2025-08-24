@@ -272,7 +272,7 @@
           • «Lagre breakpoint» låser historikken til året du ser. Reglene påvirker bare årene etter. «Tøm siste» fjerner siste breakpoint.<br>
           • Under grafen kan du slå av og på firmaer. Valgt kontor vises tydelig, andre er lysere og alle stiplet etter siste breakpoint.<br>
           • Årstall vises nederst i grafen.<br>
-          • «Toppliste» viser nivå i siste synlige år for valgt nøkkeltall.
+          • «Prognose» viser nivå i siste synlige år for valgt nøkkeltall.
         </div>
       </div>
     </div>
@@ -1048,7 +1048,7 @@ try{ if (typeof draw==='function') draw(); }catch(e){}
   <section class="arskp-panel" id="arskp-landing">
     <div class="arskp-badge">ArkSim</div>
     <h1 class="arskp-title">ArkSim Pro*</h1>
-    <p class="arskp-sub">*Dette er en alfa, en svært tidlig testversjon. Bruk den til å leke med scenarier, men forvent feil og uferdige deler. Tallene er på liksom, men innsiktene kan være reelle. Om du vil.</em></p>
+    <p class="arskp-sub">*Dette er en alfa, en svært tidlig testversjon. Bruk den til å leke med scenarier, men forvent feil og uferdige deler. Tallene er på liksom, men innsiktene kan være reelle. Om du vil.</p>
     <div class="arskp-actions">
       <button class="btn btn-primary" id="arskp-open">Åpne simulator</button>
       <button class="btn" id="arskp-about-btn">Om verktøyet</button>
@@ -1308,6 +1308,10 @@ cₜ = c_base + c_makro + c_strategi + c_interaksjoner + c_tek
 })();
 </script>
 
+;
+
+
+<script>
 /* __ARS__ mobile gate v2 */
 (function(){
   try{
@@ -1319,8 +1323,7 @@ cₜ = c_base + c_makro + c_strategi + c_interaksjoner + c_tek
       return isIOS || isAndroid;
     }
     var shouldGate = isTouchPointer() || isMobileUA();
-    if(!shouldGate) return; // do not block desktop
-    // Build minimal overlay if not present
+    if(!shouldGate) return;
     if(!document.getElementById('arskp-landing')){
       var ov = document.createElement('div');
       ov.id = 'arskp-landing';
@@ -1333,7 +1336,7 @@ cₜ = c_base + c_makro + c_strategi + c_interaksjoner + c_tek
       ov.style.justifyContent = 'center';
       ov.innerHTML = '<div class="panel arskp-panel" style="max-width:540px;text-align:center;">'
         + '<div class="arskp-title" style="font-size:18px;margin-bottom:8px;">Ikke optimalisert for mobil/nettbrett</div>'
-        + '<div class="arskp-sub" style="font-size:14px;color:var(--muted);margin-bottom:16px;">*Dette er en alfa, en svært tidlig testversjon. Bruk den til å leke med scenarier, men forvent feil og uferdige deler. Tallene er på liksom, men innsiktene kan være reelle. Om du vil.</em></div>'
+        + '<div class="arskp-sub" style="font-size:14px;color:var(--muted);margin-bottom:16px;">*Dette er en alfa, en svært tidlig testversjon. Bruk den til å leke med scenarier, men forvent feil og uferdige deler. Tallene er på liksom, men innsiktene kan være reelle. Om du vil.</div>'
         + '<div class="arskp-actions" style="display:flex;gap:12px;justify-content:center;">'
         + '<button id="arskp-continue" class="btn" style="padding:10px 14px;font-weight:600;">Fortsett likevel</button>'
         + '<button id="arskp-cancel" class="btn" style="padding:10px 14px;">Avbryt</button>'
@@ -1345,12 +1348,12 @@ cₜ = c_base + c_makro + c_strategi + c_interaksjoner + c_tek
       if (cont) cont.addEventListener('click', function(){ ov.remove(); });
       if (canc) canc.addEventListener('click', function(){ location.href = 'about:blank'; });
     } else {
-      // Ensure it's visible
       var l = document.getElementById('arskp-landing');
       l.style.display = 'flex';
     }
-  }catch(e){/* no-op */}
+  }catch(e){}
 })();
+</script>
 
 </body>
 </html>
